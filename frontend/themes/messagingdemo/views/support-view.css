@@ -1,0 +1,16 @@
+.support-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.avatar-label {
+ white-space: nowrap;
+}
+
+.vaadin-avatar {
+ background-color: red;
+}
+
+.avatar-banner {
+    align-self: center;
+}

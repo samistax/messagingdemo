@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.5</version>
+        <version>2.7.3</version>
     </parent>
 
     <repositories>
@@ -142,6 +142,38 @@
             <artifactId>webdrivermanager</artifactId>
             <version>5.1.1</version>
             <scope>test</scope>
+        </dependency>
+        <!-- Project specific dependencies -->
+        <dependency>
+            <groupId>com.datastax.astra</groupId>
+            <artifactId>astra-spring-boot-starter</artifactId>
+            <version>0.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datastax.astra</groupId>
+            <artifactId>astra-sdk</artifactId>
+            <version>0.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-cassandra</artifactId>
+            <version>2.7.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-client</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>1.10.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.24</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

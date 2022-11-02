@@ -1,7 +1,100 @@
 # MessagingDemo
 
 This project can be used as a starting point to create your own Vaadin application with Spring Boot.
-It contains all the necessary configuration and some placeholder files to get you started.
+It contains all the necessary configuration and some placeholder files to get you started. Please visit astra.datastax.com 
+for retrieving information how to connect to your AstraDB and Astra Streaming tenant. Connection details needs to be entered to 
+_application.properties_ file. 
+
+# Setting up the demo 
+
+Before you start you need to create a AstraDB instance and also an Astra Streaming tenant.
+Once you have the connection details you should replace the property values in application.properties file. 
+```
+# Astra DB Configuration
+spring.data.cassandra.schema-action=CREATE_IF_NOT_EXISTS
+astra.api.application-token=<ASTRA_DB_TOKEN>
+astra.api.database-id=<ASTRA_DB_ID>
+astra.api.database-region=<ASTRA_DB_REGION>
+
+# Astra Streaming properties (Pulsar)
+pulsar.data-topic-url=<CDC_DATA_TOPIC_URL>
+pulsar.service.url=<BROKER_SERVICE_URL>
+pulsar.service.token=<TOKEN>
+
+```
+Please not that <CDC_DATA_TOPIC_URL> is not found in dashboard before enabling CDC on _book_changelog_ table.  
+The _book_changelog_ table is created automatically when you start the application. Alternatively you can use 
+the table manually using CQL. 
+```
+CREATE TABLE bookstore.book_changelog (
+isbn text,
+"updatedAt" timestamp,
+author text,
+image blob,
+name text,
+pages int,
+price float,
+publicationdate date,
+qty int,
+updatedvalues map<text, text>,
+PRIMARY KEY (isbn, "updatedAt")
+) WITH CLUSTERING ORDER BY ("updatedAt" ASC)
+AND additional_write_policy = '99PERCENTILE'
+AND bloom_filter_fp_chance = 0.01
+AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+AND comment = ''
+AND compaction = {'class': 'org.apache.cassandra.db.compaction.UnifiedCompactionStrategy'}
+AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+AND crc_check_chance = 1.0
+AND default_time_to_live = 0
+AND gc_grace_seconds = 864000
+AND max_index_interval = 2048
+AND memtable_flush_period_in_ms = 0
+AND min_index_interval = 128
+AND read_repair = 'BLOCKING'
+AND speculative_retry = '99PERCENTILE';
+```
+Once the table is created you can find the data topic. 
+
+# Using the application:
+
+- Open application using 2 browsers ( you can use incognito mode to be able to simulate two concurrent unique users with Chrome ). 
+- Place the windows so that you can see both browser instances on your screen simultaneously.
+  - **Browser1:**
+    - Navigate to chat view and enter chat message to see it is working
+    - Wait until a new chat bot message appears.
+    
+  - **Browser2:**
+    - Navigate to Book tab and modify attributes of any book. 
+(this will update the row in db and trigger an CDC event, which in turn is captured by the Astra Chat Bot)
+  
+# Astra DB Use cases
+
+**Astra DB** 
+- Configuring Astra DB connection with spring boot
+- Using JPA (Jakarta Persistence, formerly knows as Java Persistence API layer to persist Java object to managed database. 
+
+**Astra CDC** 
+- Triggering changes in Astra DB tables and having Astra Chat bot publish the changes in Chat channel(s).
+- Deserializing Pulsar messages using POJO java classes and lombok annotations
+
+**Vaadin Collaboration engine** 
+- Persisting Chat messages to Astra DB.
+- Consuming and deserializing Pulsar messages (KeyValue / AVRO to POJO)
+
+## Licenses and commercial use
+
+**Vaadin** - UI framework used to build UI for the demo app
+Vaadin is an Apache 2.0-licensed, open-source framework. The framework and components are free to use
+for any purpose. You can develop fully-functional, complete web applications with the core
+components in Vaadin. Project is using Vaadin Collaboration engine component which is commercial for usages of 50 or more
+50 concurrent users. For more details see [pricing](https://vaadin.com/pricing)
+
+**Astra DB** - Managed Database As a Service (DBaaS).
+Astra DB is a fully Cassandra compatible and serverless DbaaS that simplifies the development and deployment of high-growth application.
+This demo project requires an existing Astra DB instance. Register and create a database instance 
+at [https://astra.datastax.com](https://astra.datastax.com) if you not already have one.
+
 
 ## Running the application
 

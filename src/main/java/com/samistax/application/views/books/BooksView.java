@@ -1,7 +1,9 @@
 package com.samistax.application.views.books;
 
 import com.samistax.application.data.entity.SampleBook;
+import com.samistax.application.data.entity.astra.BookUpdate;
 import com.samistax.application.data.service.SampleBookService;
+import com.samistax.application.data.service.astra.BookChangeLogService;
 import com.samistax.application.views.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -16,10 +18,12 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.converter.StringToFloatConverter;
 import com.vaadin.flow.data.converter.StringToIntegerConverter;
 import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -31,9 +35,8 @@ import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.Base64;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 import javax.annotation.security.PermitAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +59,8 @@ public class BooksView extends Div implements BeforeEnterObserver {
     private DatePicker publicationDate;
     private TextField pages;
     private TextField isbn;
+    private TextField qty;
+    private TextField price;
 
     private final Button cancel = new Button("Cancel");
     private final Button save = new Button("Save");
@@ -63,12 +68,18 @@ public class BooksView extends Div implements BeforeEnterObserver {
     private final BeanValidationBinder<SampleBook> binder;
 
     private SampleBook sampleBook;
+    private SampleBook sampleBookOld;
 
     private final SampleBookService sampleBookService;
+    private final BookChangeLogService bookChangeLogService;
 
     @Autowired
-    public BooksView(SampleBookService sampleBookService) {
+    public BooksView(SampleBookService sampleBookService,
+                     BookChangeLogService bookChangeLogService) {
+
         this.sampleBookService = sampleBookService;
+        this.bookChangeLogService = bookChangeLogService;
+
         addClassNames("books-view");
 
         // Create UI
@@ -89,12 +100,14 @@ public class BooksView extends Div implements BeforeEnterObserver {
                     }
                 });
         grid.addColumn(imageRenderer).setHeader("Image").setWidth("68px").setFlexGrow(0);
-
+        grid.addColumn("isbn").setAutoWidth(true);
         grid.addColumn("name").setAutoWidth(true);
         grid.addColumn("author").setAutoWidth(true);
         grid.addColumn("publicationDate").setAutoWidth(true);
         grid.addColumn("pages").setAutoWidth(true);
-        grid.addColumn("isbn").setAutoWidth(true);
+        grid.addColumn("price").setAutoWidth(true);
+        grid.addColumn("qty").setAutoWidth(true);
+
         grid.setItems(query -> sampleBookService.list(
                 PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)))
                 .stream());
@@ -115,7 +128,8 @@ public class BooksView extends Div implements BeforeEnterObserver {
 
         // Bind fields. This is where you'd define e.g. validation rules
         binder.forField(pages).withConverter(new StringToIntegerConverter("Only numbers are allowed")).bind("pages");
-
+        binder.forField(qty).withConverter(new StringToIntegerConverter("Only numbers are allowed")).bind("qty");
+        binder.forField(price).withConverter(new StringToFloatConverter("Must enter a number")).bind("price");
         binder.bindInstanceFields(this);
 
         attachImageUpload(image, imagePreview);
@@ -130,8 +144,20 @@ public class BooksView extends Div implements BeforeEnterObserver {
                 if (this.sampleBook == null) {
                     this.sampleBook = new SampleBook();
                 }
+                // Persist new sampleBook
                 binder.writeBean(this.sampleBook);
                 sampleBookService.update(this.sampleBook);
+
+                // Determine and store changed value to Book_changelog table in AStra DB
+                try {
+                    BookUpdate bookLog = createChangeLog(this.sampleBook, this.sampleBookOld);
+                    if ( bookLog != null ) {
+                        bookChangeLogService.update(bookLog);
+                    }
+                } catch (Exception ex ){
+                    System.out.println("Exception while trying to persist book change log " +  ex);
+                }
+
                 clearForm();
                 refreshGrid();
                 Notification.show("SampleBook details stored.");
@@ -142,7 +168,53 @@ public class BooksView extends Div implements BeforeEnterObserver {
         });
 
     }
+    private BookUpdate createChangeLog(SampleBook newItem, SampleBook oldItem) {
+        BookUpdate bookLog = new BookUpdate();
 
+        // Check what has changed
+        HashMap<String, String> changes = new HashMap<>();
+        if ( newItem.getImage() != oldItem.getImage() ) {
+            changes.put("image", newItem.getImage().toString());
+        }
+        if (! newItem.getAuthor().equals(oldItem.getAuthor()) ){
+            changes.put("author", newItem.getAuthor());
+        }
+        if (! newItem.getIsbn().equals(oldItem.getIsbn()) ){
+            changes.put("isbn", newItem.getIsbn());
+        }
+        if (! newItem.getName().equals(oldItem.getName()) ){
+            changes.put("name", newItem.getName());
+        }
+        if ( newItem.getPages().compareTo(oldItem.getPages()) != 0){
+            changes.put("pages", newItem.getPages().toString());
+        }
+        if ( newItem.getPrice().compareTo(oldItem.getPrice()) != 0)  {
+            changes.put("price", newItem.getPrice().toString());
+        }
+        if ( newItem.getQty().compareTo(oldItem.getQty()) != 0 ){
+            changes.put("qty", newItem.getQty().toString());
+        }
+        if (! newItem.getPublicationDate().isEqual(oldItem.getPublicationDate()) ){
+            changes.put("publicationDate", newItem.getPublicationDate().toString());
+        }
+        bookLog.setUpdatedValues(changes);
+        if ( changes.size() > 0 ) {
+            // log all new values
+            bookLog.setIsbn(newItem.getIsbn());
+            //bookLog.setImage(newItem.getImage()); // Do not store image value to keep the table queries using CQL human readable.
+            bookLog.setAuthor(newItem.getAuthor());
+            bookLog.setName(newItem.getName());
+            bookLog.setPages(newItem.getPages());
+            bookLog.setPrice(newItem.getPrice());
+            bookLog.setQty(newItem.getQty());
+            bookLog.setPublicationDate(newItem.getPublicationDate());
+            // Add timestamp
+            bookLog.setUpdatedAt(LocalDateTime.now());
+
+            return bookLog;
+        }
+        return null;
+    }
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         Optional<UUID> sampleBookId = event.getRouteParameters().get(SAMPLEBOOK_ID).map(UUID::fromString);
@@ -181,11 +253,13 @@ public class BooksView extends Div implements BeforeEnterObserver {
         publicationDate = new DatePicker("Publication Date");
         pages = new TextField("Pages");
         isbn = new TextField("Isbn");
-        formLayout.add(imageLabel, image, name, author, publicationDate, pages, isbn);
+        qty = new TextField("Qty");
+        price = new TextField("Price");
+
+        formLayout.add(imageLabel, image, isbn, name, author, publicationDate, pages, qty, price);
 
         editorDiv.add(formLayout);
         createButtonLayout(editorLayoutDiv);
-
         splitLayout.addToSecondary(editorLayoutDiv);
     }
 
@@ -236,6 +310,12 @@ public class BooksView extends Div implements BeforeEnterObserver {
 
     private void populateForm(SampleBook value) {
         this.sampleBook = value;
+        if ( value != null ) {
+            sampleBookOld = value.clone();
+        } else {
+            sampleBookOld = null;
+        }
+
         binder.readBean(this.sampleBook);
         this.imagePreview.setVisible(value != null);
         if (value == null || value.getImage() == null) {

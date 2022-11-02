@@ -1,0 +1,12 @@
+[part="backdrop"] {
+    background-image: url(images/login-bg.png);
+    background-size: cover;
+}
+/* this will add bg image to title part */
+[part="brand"] {
+    /*background-image: url(images/datastax.png);*/
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-origin: inherit;
+    background-size: 100px;
+}

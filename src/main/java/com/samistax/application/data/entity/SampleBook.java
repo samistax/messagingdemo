@@ -22,6 +22,10 @@ public class SampleBook extends AbstractEntity {
     private Integer pages;
     @Nonnull
     private String isbn;
+    @Nonnull
+    private Integer qty;
+    @Nonnull
+    private Float price;
 
     public byte[] getImage() {
         return image;
@@ -58,6 +62,22 @@ public class SampleBook extends AbstractEntity {
     }
     public void setIsbn(String isbn) {
         this.isbn = isbn;
+    }
+    public Float getPrice() { return price; }
+    public void setPrice(Float price) { this.price = price;}
+    public Integer getQty() {return qty;}
+    public void setQty(Integer qty) {this.qty = qty;}
+    public SampleBook clone() {
+        SampleBook copy = new SampleBook();
+        copy.setImage(this.getImage());
+        copy.setName(this.getName());
+        copy.setAuthor(this.getAuthor());
+        copy.setPublicationDate(this.getPublicationDate());
+        copy.setPages(this.getPages());
+        copy.setIsbn(this.getIsbn());
+        copy.setPrice(this.getPrice());
+        copy.setQty(this.getQty());
+        return copy;
     }
 
 }
