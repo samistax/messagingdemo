@@ -22,7 +22,7 @@ public class AboutView extends VerticalLayout {
         add(img);
 
         add(new H2("Delivering products that the developers love and that will change the trajectory of the enterprises they work for."));
-        add(new Paragraph("Copyright © 2022 DataStax."));
+        //add(new Paragraph("Copyright © 2022 DataStax."));
 
         setSizeFull();
         setJustifyContentMode(JustifyContentMode.CENTER);
