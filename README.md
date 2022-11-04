@@ -77,6 +77,11 @@ for any purpose. You can develop fully-functional, complete web applications wit
 components in Vaadin. Project is using Vaadin Collaboration engine component which is commercial for usages of 50 or more
 50 concurrent users. For more details see [pricing](https://vaadin.com/pricing)
 
+**Vaadin - Collaboration Engine licence**
+In order to use the Chat module you need to download free universal license from: https://website.vaadin.com/hubfs/collaboration-engine/ce-license.json and place the content to a file called ‘ce-license.json’ in your local computer.
+In addition you need to *vaadin.collaboration-engine.datadir* property to match the location you stored the ce-license.json file. Alternatively you can use System properties.
+For more information visit https://vaadin.com/docs/latest/tools/collaboration/going-to-production
+
 **Astra DB** - Managed Database As a Service (DBaaS).
 Astra DB is a fully Cassandra compatible and serverless DbaaS that simplifies the development and deployment of high-growth application.
 This demo project requires an existing Astra DB instance. Register and create a database instance 

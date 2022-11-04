@@ -33,7 +33,7 @@ public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
         this.authenticatedUser = authenticatedUser;
         this.astraCDCService = astraCDCService;
 
-        String topicId = "#general";
+        String topicId = "chat/#general";
         addClassName("support-view");
         setSpacing(false);
         // UserInfo is used by Collaboration Engine and is used to share details
@@ -81,10 +81,9 @@ public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
         MessageManager msgManager = new MessageManager(this, userInfo,topicId );
         //astraCDCService.setMessageManagerParent(this);
 
-        // Start Astra Streaming consumer to minotor incoming messages
-        //if (! astraCDCService.isPulsarConsumerEnabled() ) {
-            astraCDCService.startAsynchConsumer(msgManager, topicId);
-        //}
+        // Start Astra Streaming consumer to listen to incoming messages. Provide Chat engine and topic id where to push messages.
+        astraCDCService.startAsynchConsumer(CollaborationEngine.getInstance(), topicId);
+
 
         CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(userInfo, topicId);
         avatarGroup.setClassName("avatar-label");
@@ -93,7 +92,6 @@ public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
         label.setClassName("avatar-label");
         HorizontalLayout avatarBanner = new HorizontalLayout(label, avatarGroup);
         avatarBanner.setAlignItems(Alignment.CENTER);
-        //avatarBanner.setFlexDirection(FlexLayout.FlexDirection.ROW_REVERSE);
         avatarBanner.setClassName("avatar-banner");
 
         // Layouting
@@ -106,17 +104,14 @@ public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
         // Change the topic id of the chat when a new tab is selected
         tabs.addSelectedChangeListener(event -> {
             String channelName = event.getSelectedTab().getLabel();
-            //list.setTopic("chat/" + channelName);
-            list.setTopic(channelName);
-
+            list.setTopic("chat/" + channelName);
         });
     }
-
 
     @Override
     public void beforeLeave(BeforeLeaveEvent beforeLeaveEvent) {
         if ( astraCDCService != null ) {
-            astraCDCService.stopAsynchConsumer();
+            // astraCDCService.stopAsynchConsumer();
         }
     }
 }

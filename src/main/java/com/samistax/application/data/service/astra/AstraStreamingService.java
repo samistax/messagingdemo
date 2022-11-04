@@ -1,10 +1,7 @@
 package com.samistax.application.data.service.astra;
 
 import com.samistax.application.data.entity.astra.cdc.BookCDC;
-import com.vaadin.collaborationengine.CollaborationMessage;
-import com.vaadin.collaborationengine.CollaborationMessagePersister;
-import com.vaadin.collaborationengine.MessageManager;
-import com.vaadin.collaborationengine.UserInfo;
+import com.vaadin.collaborationengine.*;
 import com.vaadin.flow.component.Component;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.Schema;
@@ -102,7 +99,6 @@ public class AstraStreamingService {
         pulserConsumerEnabled = false;
         if ( consumer != null ) {
             consumer.resume();
-
             return consumer.getLastDisconnectedTimestamp();
         }
         return 0;
@@ -131,40 +127,41 @@ public class AstraStreamingService {
                 }
             }
             logger.debug("pulsarMsgToString msg.getReaderSchema(): " + msg.getReaderSchema());
-            logger.info("pulsarMsgToString msg.getKey(): " + msg.getKey());
-            logger.info("pulsarMsgToString msg.getValue(): " + msg.getValue());
+            logger.debug("pulsarMsgToString msg.getKey(): " + msg.getKey());
+            logger.debug("pulsarMsgToString msg.getValue(): " + msg.getValue());
         }
         return formattedMessage;
     }
 
-    public boolean isPulsarConsumerEnabled() {
-        return pulserConsumerEnabled;
-    }
     public void stopAsynchConsumer()  {
         pulserConsumerEnabled = false;
     }
-    public void startAsynchConsumer(MessageManager manager, String topicId )  {
+    public void startAsynchConsumer(CollaborationEngine collaborationEngine, String topicId )  {
 
         // Initiate new asynchronous pulsar msg listener if not already running
         if ( ! pulserConsumerEnabled && this.consumer != null ) {
 
+
+            UserInfo cdcBotUser = new UserInfo("astra-cdc", "Astra CDC", "https://plugins.jetbrains.com/files/17013/169775/icon/pluginIcon.svg");
+            ConnectionContext context = collaborationEngine.getSystemContext();
+            MessageManager messageManager = new MessageManager(context, cdcBotUser, topicId, collaborationEngine);
+
             new Thread(()  -> { // Message Retrieval Thread
 
-                logger.info("STARTED NEW PULSAR CONSUMER THREAD: " + Thread.currentThread().getId());
+                logger.debug("STARTING PULSAR CONSUMER THREAD: " + Thread.currentThread().getId());
                 CompletableFuture<Message> future;
                 pulserConsumerEnabled = true;
 
-                System.out.println("Reading pulsar messages");
                 while ( pulserConsumerEnabled && (future = consumer.receiveAsync()) != null) {
 
                     try {
                         Message msg = future.get();
                         String pulsarMsg = pulsarMsgToString(msg);
                         if ( pulsarMsg != null ){
-                            UserInfo cdcBotUser = new UserInfo("astra-cdc", "Astra CDC", "https://plugins.jetbrains.com/files/17013/169775/icon/pluginIcon.svg");
+
                             //MessageManager cdcMsgmanager = new MessageManager(manager, cdcBotUser,topicId );
                             CollaborationMessage cdcEventMsg = new CollaborationMessage(cdcBotUser, pulsarMsg, Instant.now());
-                            manager.submit(cdcEventMsg);
+                            messageManager.submit(cdcEventMsg);
                         }
                         // Acknowledge message is received.
                         consumer.acknowledgeAsync(msg);
@@ -172,56 +169,13 @@ public class AstraStreamingService {
                         logger.debug("Exception processing Pulsar message", e);
                     }
                 }
-                logger.info("TERMINATING PULSAR CONSUMER THREAD: " + Thread.currentThread().getId());
+                // Close messageManager, thread about to close
+                messageManager.close();
+                logger.debug("LEAVING PULSAR CONSUMER THREAD: " + Thread.currentThread().getId());
             }).start();
         }
     }
 
-/*
-    public ArrayList<Message> fetchMessagesSince(String topicId, Instant sinceTimestamp )  {
-        ArrayList<Message>  messages = new ArrayList<>();
-
-        if (client != null && topicId != null) {
-
-            Reader<byte[]> reader = null;
-            long rollbackDuration = (System.currentTimeMillis() - sinceTimestamp.toEpochMilli() )/1000;
-            try {
-                reader = client.newReader()
-                        .topic(topicId)
-                        .startMessageId(MessageId.earliest)
-                        // .startMessageFromRollbackDuration(rollbackDuration,TimeUnit.MILLISECONDS)
-                        .create();
-
-
-                Message msg = null;
-                boolean receivedMsg = false;
-                // Loop until a message is received
-                do {
-                    // Block for up to 1 second for a message
-                    msg = reader.readNext();
-                    if( msg != null){
-                        messages.add(msg);
-                        System.out.printf("Message read: %s%n",  new String(msg.getData()));
-                        receivedMsg = true;
-                    }
-                }  while (!receivedMsg && msg != null );
-
-            } catch (PulsarClientException pce) {
-                logger.debug("PulsarClientException while Pulsar fetchMessage", pce);
-            }
-            try {
-                //Close the reader
-                if ( reader != null ) {
-                    reader.close();
-                }
-            } catch (Exception ioe) {
-                logger.debug("IO Exception while Pulsar fetchMessage", ioe);
-            }
-        }
-        return messages;
-    }
-
- */
     public void sendPulsarMessage(CollaborationMessagePersister.PersistRequest req)  {
         if (client != null) {
             try {
