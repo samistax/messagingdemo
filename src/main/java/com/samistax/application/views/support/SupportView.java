@@ -1,6 +1,7 @@
 package com.samistax.application.views.support;
 
 import com.samistax.application.data.entity.User;
+import com.samistax.application.data.service.UserService;
 import com.samistax.application.data.service.astra.AstraStreamingService;
 import com.samistax.application.security.AuthenticatedUser;
 import com.samistax.application.views.MainLayout;
@@ -13,25 +14,28 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.router.BeforeLeaveEvent;
-import com.vaadin.flow.router.BeforeLeaveObserver;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
+import com.vaadin.flow.server.StreamResource;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
 
-@PageTitle("Support")
+@PageTitle("Support Chat")
 @Route(value = "support", layout = MainLayout.class)
-@PermitAll
-public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
+@RouteAlias(value = "", layout = MainLayout.class)
+@RolesAllowed({"ADMIN","USER"})
+public class SupportView extends VerticalLayout implements BeforeLeaveObserver,BeforeEnterObserver {
     private AstraStreamingService astraCDCService;
     private AuthenticatedUser authenticatedUser;
+    private UserService userService;
 
-    public SupportView(AuthenticatedUser authenticatedUser, AstraStreamingService astraCDCService) {
+    public SupportView(AuthenticatedUser authenticatedUser, AstraStreamingService astraCDCService, UserService userService) {
         this.authenticatedUser = authenticatedUser;
         this.astraCDCService = astraCDCService;
+        this.userService = userService;
 
         String topicId = "chat/#general";
         addClassName("support-view");
@@ -65,6 +69,23 @@ public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
         // for information on how to persisting are retrieving messages over
         // server restarts.
         CollaborationMessageList list = new CollaborationMessageList(userInfo, topicId);
+        UserInfo finalUserInfo = userInfo;
+        list.setMessageConfigurator((message, user) -> {
+            if (user.getId().equals("astra-cdc")) {
+                message.addThemeNames("astracdc-user");
+            } else if (finalUserInfo != null && user.getId().equals(finalUserInfo.getId())) {
+                message.addThemeNames("current-user");
+            } else {
+                message.addThemeNames("other-user");
+            }
+            // Monitor for keywords and if found send pulsar message
+            if ( message.getText().toLowerCase().contains("astra") ||
+                    message.getText().toLowerCase().contains("pulsar"))  {
+                // TODO: Demonstrate how to send Pulsar message and sink based on keyword
+                // astraCDCService.sendPulsarMessage(message);
+            }
+
+        });
         list.setWidthFull();
         list.addClassNames("chat-view-message-list");
 
@@ -84,8 +105,18 @@ public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
         // Start Astra Streaming consumer to listen to incoming messages. Provide Chat engine and topic id where to push messages.
         astraCDCService.startAsynchConsumer(CollaborationEngine.getInstance(), topicId);
 
-
         CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(userInfo, topicId);
+        /* avatarGroup.setImageProvider(userInfo -> {
+            StreamResource streamResource = new StreamResource(
+                    "avatar_" + userInfo.getId(), () -> {
+                // The following not recommended way of doing thing but for demo purposes want to reduce clicks required to join demo with own device.
+                User user = userService.get(userInfo.getId());
+                return new ByteArrayInputStream(userDetails..getProfilePicture());
+            });
+            streamResource.setContentType("image/png");
+            return streamResource;
+        }); */
+
         avatarGroup.setClassName("avatar-label");
         Span label = new Span("Active users online: ");
         label.setWidthFull();
@@ -108,6 +139,12 @@ public class SupportView extends VerticalLayout implements BeforeLeaveObserver {
         });
     }
 
+    @Override
+    public void beforeEnter(BeforeEnterEvent beforeEnterEvent) {
+        if ( astraCDCService != null ) {
+            // astraCDCService.stopAsynchConsumer();
+        }
+    }
     @Override
     public void beforeLeave(BeforeLeaveEvent beforeLeaveEvent) {
         if ( astraCDCService != null ) {

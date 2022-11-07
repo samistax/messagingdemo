@@ -74,7 +74,7 @@ public class ChatMessagePersister implements CollaborationMessagePersister {
     public void persistMessage(PersistRequest request) {
         CollaborationMessage message = request.getMessage();
         if ( pulsarService != null ){
-            pulsarService.sendPulsarMessage(request);
+            pulsarService.sendPulsarMessage(request.getMessage());
         }
         if ( chatService != null ){
             UserInfo info = message.getUser();

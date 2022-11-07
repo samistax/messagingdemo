@@ -1,0 +1,45 @@
+:host {
+    flex-direction: row-reverse;
+}
+:host [part="content"] {
+    padding: 10px;
+    border-radius: 10px;
+    flex-grow: 0;
+}
+:host([theme~="current-user"]) {
+    color: var(---lumo-contrast-10pct);
+    flex-direction: row;
+}
+:host([theme~="other-user"]) {
+    color: var(---lumo-contrast-10pct);
+    flex-direction: row-reverse;
+}
+:host([theme~="current-user"]) [part="name"] {
+    font-weight: 600;
+}
+:host([theme~="current-user"]) [part="name"]::before {
+    content: " (You)";
+}
+:host([theme~="current-user"]) [part="content"] {
+    background-color: var(--lumo-shade-50pct);
+}
+:host([theme~="other-user"]) [part="content"] {
+    background-color: var(--lumo-shade-50pct);
+    margin-right: 15px;
+
+}
+
+:host([theme~="astracdc-user"]) {
+    background-color: var( --lumo-primary-color);
+    color: #fff;
+    border-radius: 15px;
+    font-weight: 500;
+    flex-direction: row;
+}
+:host([theme~="astracdc-user"]) [part="name"]::after {
+    content: " - event";
+}
+
+:host([theme~="astracdc-user"]) [part="content"]::after {
+    background-color: var( --lumo-primary-color);
+}

@@ -23,6 +23,8 @@ public class AstraStreamingService {
 
     @Value("${pulsar.data-topic-url:persistent://<tenant name>/astracdc/<data topic name>}")
     private String PULSAR_DATA_TOPIC_URL;
+    @Value("${pulsar.chat-topic-url}")
+    private String PULSAR_CHAT_MESSAGES_TOPIC_URL;
     @Value("${pulsar.service.url:}")
     private String SERVICE_URL;
     @Value("${pulsar.service.token:}")
@@ -176,18 +178,20 @@ public class AstraStreamingService {
         }
     }
 
-    public void sendPulsarMessage(CollaborationMessagePersister.PersistRequest req)  {
-        if (client != null) {
+    public void sendPulsarMessage(CollaborationMessage msg)  {
+       // if (client != null) {
+        if (false) {
             try {
                 // Create producer on a topic
                 Producer<byte[]> producer = client.newProducer()
-                        //.topic(PULSAR_TENANT+"/"+PULSAR_NAMESPACE+"/"+PULSAR_TOPIC)
-                        .topic(PULSAR_DATA_TOPIC_URL)
-                        .producerName(req.getMessage().getUser().getName())
+                        .topic(PULSAR_CHAT_MESSAGES_TOPIC_URL)
+                        .producerName("Astra CDC demo app")
                         .create();
 
                 // Send a message to the topic
-                producer.send(req.getMessage().getText().getBytes());
+                // TODO: Convert Collaboration Engine message to structured Pulsar message instead of just String
+                // Send and object with user id as key and then message text as value.
+                producer.send(msg.getText().getBytes());
 
                 //Close the producer
                 producer.close();

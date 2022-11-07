@@ -1,5 +1,6 @@
 package com.samistax.application.views.books;
 
+import com.samistax.application.data.Role;
 import com.samistax.application.data.entity.SampleBook;
 import com.samistax.application.data.entity.astra.BookUpdate;
 import com.samistax.application.data.service.SampleBookService;
@@ -32,19 +33,21 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.*;
 import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 
-@PageTitle("Books")
+@PageTitle("Book Management")
 @Route(value = "books/:sampleBookID?/:action?(edit)", layout = MainLayout.class)
-@RouteAlias(value = "", layout = MainLayout.class)
-@PermitAll
+@RolesAllowed("ADMIN")
 public class BooksView extends Div implements BeforeEnterObserver {
 
     private final String SAMPLEBOOK_ID = "sampleBookID";

@@ -28,4 +28,4 @@ COPY --from=build /usr/src/app/target/*.jar /usr/app/app.jar
 RUN useradd -m myuser
 USER myuser
 EXPOSE 8080
-CMD java -jar /usr/app/app.jar
+CMD java -Dvaadin.ce.dataDir=/usr/app/ce -jar /usr/app/app.jar

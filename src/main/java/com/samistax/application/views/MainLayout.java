@@ -7,18 +7,16 @@ import com.samistax.application.security.AuthenticatedUser;
 import com.samistax.application.views.about.AboutView;
 import com.samistax.application.views.books.BooksView;
 import com.samistax.application.views.support.SupportView;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.contextmenu.MenuItem;
-import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Footer;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Header;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.StreamResource;
@@ -36,6 +34,8 @@ public class MainLayout extends AppLayout {
 
     private AuthenticatedUser authenticatedUser;
     private AccessAnnotationChecker accessChecker;
+    private Footer footer;
+    private AppNav navigation;
 
     public MainLayout(AuthenticatedUser authenticatedUser, AccessAnnotationChecker accessChecker) {
         this.authenticatedUser = authenticatedUser;
@@ -57,47 +57,56 @@ public class MainLayout extends AppLayout {
     }
 
     private void addDrawerContent() {
-        H1 appName = new H1("MessagingDemo");
+
+        Image headerLogo = new Image("images/datastax-square.png","logo");
+        headerLogo.setWidth(20, Unit.PIXELS);
+        H1 appName = new H1("Astra CDC Demo");
         appName.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.NONE);
-        Header header = new Header(appName);
+        HorizontalLayout headerLayout = new HorizontalLayout();
+        headerLayout.add(headerLogo,appName);
+        headerLayout.setFlexGrow(0.2, headerLogo);
+        headerLayout.setFlexGrow(0.8, appName);
+        Header header = new Header(headerLayout);
 
-        Scroller scroller = new Scroller(createNavigation());
-
-        addToDrawer(header, scroller, createFooter());
+        Scroller scroller = new Scroller(updateNavigation(navigation = new AppNav()));
+        addToDrawer(header, scroller, updateFooter(footer  = new Footer()));
     }
 
-    private AppNav createNavigation() {
+    private AppNav updateNavigation(AppNav nav) {
         // AppNav is not yet an official component.
         // For documentation, visit https://github.com/vaadin/vcf-nav#readme
-        AppNav nav = new AppNav();
+        //AppNav nav = new AppNav();
+        nav.removeAllItems();
 
         if (accessChecker.hasAccess(BooksView.class)) {
-            nav.addItem(new AppNavItem("Books", BooksView.class, "la la-book-open"));
+            nav.addItem(new AppNavItem("Book Management", BooksView.class, "la la-book-open"));
 
         }
         if (accessChecker.hasAccess(SupportView.class)) {
-            nav.addItem(new AppNavItem("Support", SupportView.class, "la la-comments"));
+            nav.addItem(new AppNavItem("Support Chat", SupportView.class, "la la-comments"));
 
         }
         if (accessChecker.hasAccess(AboutView.class)) {
             nav.addItem(new AppNavItem("About", AboutView.class, "la la-file"));
 
         }
-
         return nav;
     }
 
-    private Footer createFooter() {
-        Footer layout = new Footer();
+    private Footer updateFooter(Footer layout) {
+        //Footer layout = new Footer();
+        layout.removeAll();
 
         Optional<User> maybeUser = authenticatedUser.get();
         if (maybeUser.isPresent()) {
             User user = maybeUser.get();
 
             Avatar avatar = new Avatar(user.getName());
-            StreamResource resource = new StreamResource("profile-pic",
-                    () -> new ByteArrayInputStream(user.getProfilePicture()));
-            avatar.setImageResource(resource);
+            if ( user.getProfilePicture() != null ) {
+                StreamResource resource = new StreamResource("profile-pic",
+                        () -> new ByteArrayInputStream(user.getProfilePicture()));
+                avatar.setImageResource(resource);
+            }
             avatar.setThemeName("xsmall");
             avatar.getElement().setAttribute("tabindex", "-1");
 
@@ -130,6 +139,8 @@ public class MainLayout extends AppLayout {
     protected void afterNavigation() {
         super.afterNavigation();
         viewTitle.setText(getCurrentPageTitle());
+        updateNavigation(navigation);
+        updateFooter(footer);
     }
 
     private String getCurrentPageTitle() {

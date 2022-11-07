@@ -1,6 +1,7 @@
 package com.samistax.application.data.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.samistax.application.components.ui.AvatarImage;
 import com.samistax.application.data.Role;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -31,6 +32,7 @@ public class User extends AbstractEntity {
     @Lob
     @Column(length = 1000000)
     private byte[] profilePicture;
+   // private AvatarImage avatar;
 
     public String getUsername() {
         return username;
@@ -62,5 +64,6 @@ public class User extends AbstractEntity {
     public void setProfilePicture(byte[] profilePicture) {
         this.profilePicture = profilePicture;
     }
-
+    //public AvatarImage getAvatar() {return avatar;}
+    //public void setAvatar(AvatarImage avatar) { this.avatar = avatar;}
 }

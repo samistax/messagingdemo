@@ -10,3 +10,11 @@
     background-origin: inherit;
     background-size: 100px;
 }
+
+[part="title"] {
+    font-size: x-large;
+}
+/*[part="brand"] {
+background: url(images/datastax-square.png);
+background-size: cover;
+}*/
