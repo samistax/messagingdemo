@@ -260,7 +260,7 @@ public class SignupView extends VerticalLayout {
         }
 
         String pass2 = passwordField2.getValue();
-        if (pass1 != null && pass2.equals(pass1) ) {
+        if (pass2.equals(pass1) ) {
         //&& passwordEncoder.matches(pass2, pass1) ) {
             return ValidationResult.ok();
         }
@@ -316,8 +316,11 @@ public class SignupView extends VerticalLayout {
             // Produces a converted value or an error
             try {
 
-                // ok is a static helper method that
-                // creates a Result
+                // ok is a static helper method that creates a Result
+                // Empty values are ok since profile pic is optional
+                if ( fieldValue == null) {
+                    return Result.ok(String.valueOf("").getBytes());
+                }
                 return Result.ok(fieldValue.getImage());
             } catch (NumberFormatException e) {
                 // error is a static helper method
